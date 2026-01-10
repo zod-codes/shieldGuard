@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Unnecessay Components
+src/components/figma/
+src/components/ui/
