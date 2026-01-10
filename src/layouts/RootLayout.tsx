@@ -16,7 +16,7 @@ export function RootLayout() {
   };
 
   const handleTrackingClick = () => {
-    setShowTrackingPage(true);
+    setShowTrackingPage(false);
   };
 
   const isHomePage = location.pathname === '/';

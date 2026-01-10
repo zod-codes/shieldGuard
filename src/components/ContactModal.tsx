@@ -1,5 +1,7 @@
-import { X, Mail, Phone, MapPin, Send } from 'lucide-react';
+import { useForm } from "react-hook-form";
+import useWeb3Forms from "@web3forms/react"
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { X, Mail, Phone, MapPin, Send } from 'lucide-react';
 
 interface ContactModalProps {
   isOpen: boolean;
@@ -7,6 +9,32 @@ interface ContactModalProps {
 }
 
 export function ContactModal({ isOpen, onClose }: ContactModalProps) {
+  const {register, reset, handleSubmit} = useForm();
+
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [result, setResult] = useState(null);
+
+  const accessKey = "cc10d60c-0824-42e7-833f-63a27d482adc";
+
+  const { submit: onSubmit } = useWeb3Forms({
+    access_key: accessKey,
+    settings: {
+      from_name: "Acme Inc",
+      subject: "New Contact Message from your Website",
+      // ... other settings
+    },
+    onSuccess: (msg, data) => {
+      setIsSuccess(true);
+      setResult(msg);
+      reset();
+    },
+    onError: (msg, data) => {
+      setIsSuccess(false);
+      setResult(msg);
+    },
+  });
+
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
