@@ -133,14 +133,14 @@ export function Footer() {
                 className="flex items-start text-gray-400"
               >
                 <Phone size={18} className="mr-3 mt-1 flex-shrink-0" style={{ color: 'var(--primary)' }} />
-                <span>+7 (356) 594-0689 (Headquarters ~ AI assistant)</span>
+                <span>+7 (356) 594-0689 (Headquarters)</span>
               </li>
               <li
                 onClick={handleWhatsAppClick}
                 className="flex items-start text-gray-400"
               >
                 <Phone size={18} className="mr-3 mt-1 flex-shrink-0" style={{ color: 'var(--primary)' }} />
-                <span>+1 (512) 560-0649 (sales rep)</span>
+                <span>+1 (512) 560-0649 (sales rep ¬ AI assistant)</span>
               </li>
               <li className="flex items-start text-gray-400">
                 <Mail size={18} className="mr-3 mt-1 flex-shrink-0" style={{ color: 'var(--primary)' }} />
