@@ -20,6 +20,7 @@ export function RootLayout() {
   };
 
   const isHomePage = location.pathname === '/';
+  const isTrue = false;
 
   return (
     <div className="min-h-screen">
@@ -37,7 +38,7 @@ export function RootLayout() {
 
       {/* Mobile Tracking Page */}
       <TrackingPage
-        isOpen={showTrackingPage}
+        isOpen={isTrue&&showTrackingPage}
         onClose={() => setShowTrackingPage(false)}
       />
 
