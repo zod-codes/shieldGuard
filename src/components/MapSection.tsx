@@ -231,8 +231,8 @@ export function MapSection() {
 
                 <Geographies geography={geoData}>
                   {({ geographies }) =>
-                    geographies.map((geo) => (
-                      <Geography key={geo.rsmKey} geography={geo} fill="#1e293b" stroke="#334155" />
+                    geographies.map((geo, i) => (
+                      <Geography key={`${geo.rsmKey}_${i}`} geography={geo} fill="#1e293b" stroke="#334155" />
                     ))
                   }
                 </Geographies>

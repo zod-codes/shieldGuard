@@ -7,6 +7,8 @@ interface HeroProps {
   onTrackingClick?: () => void;
 }
 
+const isTrue = false;
+
 export function Hero({ onTrackingClick }: HeroProps) {
   const [trackingNumber, setTrackingNumber] = useState('');
   const [showTrackingPopup, setShowTrackingPopup] = useState(false);
@@ -115,7 +117,7 @@ export function Hero({ onTrackingClick }: HeroProps) {
       {/* Tracking Popup - Desktop Only */}
       <div className="hidden md:block">
         <TrackingPopup
-          isOpen={showTrackingPopup}
+          isOpen={isTrue && showTrackingPopup}
           onClose={() => setShowTrackingPopup(false)}
           trackingNumber={trackingNumber || 'FD-2026-001234'}
         />
