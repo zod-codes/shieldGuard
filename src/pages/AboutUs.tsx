@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { useOutletContext } from "react-router-dom";
+import { ContactOptionsModal } from "../components/ContactOptionsModal";
 import { Target, Eye, Award, Users, TrendingUp, Globe } from 'lucide-react';
 
 interface OutletContext {
@@ -6,6 +8,7 @@ interface OutletContext {
 }
 
 export function AboutUs() {
+  const [showContactOptions, setShowContactOptions] = useState(false);
   const { onContactClick } = useOutletContext<OutletContext>();
 
 
@@ -224,22 +227,29 @@ export function AboutUs() {
               Whether you're looking to ship your products or join our team, we'd love to hear from you.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              {/* <button 
+              <button
+                onClick={() => setShowContactOptions(true)}
                 className="px-8 py-3 rounded-lg text-white transition-colors"
                 style={{ backgroundColor: 'var(--primary)' }}
               >
-                Get Started
-              </button> */}
+                Talk to a Sales Rep
+              </button>
               <button
                 onClick={onContactClick}
                 className="px-8 py-3 rounded-lg border-2 transition-colors"
                 style={{ borderColor: 'var(--primary)', color: 'var(--primary)' }}>
-                Contact Us
+                Send us a message
               </button>
             </div>
           </div>
         </div>
       </section>
+
+      {/* Contact Options Modal */}
+      <ContactOptionsModal
+        isOpen={showContactOptions}
+        onClose={() => setShowContactOptions(false)}
+      />
     </div>
   );
 }

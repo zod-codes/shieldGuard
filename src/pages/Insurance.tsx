@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { useOutletContext } from "react-router-dom";
+import { ContactOptionsModal } from "../components/ContactOptionsModal";
 import { Shield, CheckCircle, DollarSign, Clock, Award } from 'lucide-react';
 
 interface OutletContext {
@@ -6,6 +8,7 @@ interface OutletContext {
 }
 
 export function Insurance() {
+  const [showContactOptions, setShowContactOptions] = useState(false);
   const { onContactClick } = useOutletContext<OutletContext>();
 
 
@@ -183,12 +186,11 @@ export function Insurance() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button
+                onClick={() => setShowContactOptions(true)}
                 className="px-8 py-3 rounded-lg text-white transition-colors"
                 style={{ backgroundColor: 'var(--primary)' }}
               >
-                <a href="https://t.me/ShieldGuard_Transport_Services">
-                  Get Insurance Quote
-                </a>
+                Get Insurance Quote
               </button>
               <button
                 onClick={onContactClick}
@@ -200,6 +202,12 @@ export function Insurance() {
           </div>
         </div>
       </section>
+      
+      {/* Contact Options Modal */}
+      <ContactOptionsModal
+        isOpen={showContactOptions}
+        onClose={() => setShowContactOptions(false)}
+      />
     </div>
   );
 }

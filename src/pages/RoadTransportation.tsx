@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { useOutletContext } from "react-router-dom";
+import { ContactOptionsModal } from "../components/ContactOptionsModal";
 import { Truck, CheckCircle, Clock, Shield, MapPin } from 'lucide-react';
 
 interface OutletContext {
@@ -6,6 +8,7 @@ interface OutletContext {
 }
 
 export function RoadTransportation() {
+  const [showContactOptions, setShowContactOptions] = useState(false);
   const { onContactClick } = useOutletContext<OutletContext>();
 
   const features = [
@@ -118,12 +121,11 @@ export function RoadTransportation() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button
+                onClick={() => setShowContactOptions(true)}
                 className="px-8 py-3 rounded-lg text-white transition-colors"
                 style={{ backgroundColor: 'var(--primary)' }}
               >
-                <a href="https://t.me/ShieldGuard_Transport_Services">
-                  Request a Quote
-                </a>
+                Request a Quote
               </button>
               <button
                 onClick={onContactClick}
@@ -135,6 +137,12 @@ export function RoadTransportation() {
           </div>
         </div>
       </section>
+
+      {/* Contact Options Modal */}
+      <ContactOptionsModal
+        isOpen={showContactOptions}
+        onClose={() => setShowContactOptions(false)}
+      />
     </div>
   );
 }

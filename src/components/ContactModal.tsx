@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
-import useWeb3Forms from "@web3forms/react"
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { X, Mail, Phone, MapPin, Send } from 'lucide-react';
+import useWeb3Forms from "@web3forms/react";
+import { useState, useEffect, useRef } from 'react';
+import { X, Mail, Phone, MapPin, Send, CheckCircle, AlertCircle } from 'lucide-react';
 
 interface ContactModalProps {
   isOpen: boolean;
@@ -9,41 +9,35 @@ interface ContactModalProps {
 }
 
 export function ContactModal({ isOpen, onClose }: ContactModalProps) {
-  const {register, reset, handleSubmit} = useForm();
-
+  const { register, reset, handleSubmit } = useForm();
   const [isSuccess, setIsSuccess] = useState(false);
-  const [result, setResult] = useState(null);
+  const [message, setMessage] = useState("");
+  const modalRef = useRef<HTMLDivElement>(null);
 
-  const accessKey = "cc10d60c-0824-42e7-833f-63a27d482adc";
+  const accessKey = "d8d2055f-c622-414a-8959-6b884b723ac4";
 
   const { submit: onSubmit } = useWeb3Forms({
     access_key: accessKey,
     settings: {
-      from_name: "Acme Inc",
-      subject: "New Contact Message from your Website",
-      // ... other settings
+      from_name: "Shield Guard Logistics",
+      subject: "New Contact Message from Website",
     },
-    onSuccess: (msg, data) => {
+    onSuccess: (msg) => {
       setIsSuccess(true);
-      setResult(msg);
+      setMessage(msg);
       reset();
+      // Auto-close after 3 seconds
+      setTimeout(() => {
+        onClose();
+        setIsSuccess(false);
+        setMessage("");
+      }, 3000);
     },
-    onError: (msg, data) => {
+    onError: (msg) => {
       setIsSuccess(false);
-      setResult(msg);
+      setMessage(msg);
     },
   });
-
-
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    subject: '',
-    message: ''
-  });
-
-  const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -66,31 +60,10 @@ export function ContactModal({ isOpen, onClose }: ContactModalProps) {
     };
   }, [isOpen, onClose]);
 
-  const handleSubmit = useCallback((e: React.FormEvent) => {
-    e.preventDefault();
-    console.log('Contact form submitted:', formData);
-    // Reset form
-    setFormData({
-      name: '',
-      email: '',
-      phone: '',
-      subject: '',
-      message: ''
-    });
-    onClose();
-  }, [formData, onClose]);
-
-  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  }, [formData]);
-
   if (!isOpen) return null;
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       role="presentation"
       onClick={(e) => {
@@ -99,7 +72,7 @@ export function ContactModal({ isOpen, onClose }: ContactModalProps) {
         }
       }}
     >
-      <div 
+      <div
         ref={modalRef}
         className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
         role="dialog"
@@ -128,10 +101,10 @@ export function ContactModal({ isOpen, onClose }: ContactModalProps) {
               <p className="text-gray-600 mb-6">
                 Have questions? We'd love to hear from you. Send us a message and we'll respond as soon as possible.
               </p>
-              
+
               <div className="space-y-6 mb-8">
                 <div className="flex items-start">
-                  <div 
+                  <div
                     className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 mr-4"
                     style={{ backgroundColor: 'rgba(0, 191, 165, 0.1)' }}
                   >
@@ -139,26 +112,26 @@ export function ContactModal({ isOpen, onClose }: ContactModalProps) {
                   </div>
                   <div>
                     <h4 className="mb-1 font-semibold text-gray-900">Phone</h4>
-                    <p className="text-gray-600">+7 (495) 123-45-67</p>
+                    <p className="text-gray-600">+1 (512) 560-0649</p>
                   </div>
                 </div>
 
                 <div className="flex items-start">
-                  <div 
+                  <div
                     className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 mr-4"
                     style={{ backgroundColor: 'rgba(0, 191, 165, 0.1)' }}
                   >
                     <Mail size={20} style={{ color: 'var(--primary)' }} />
                   </div>
-                  <div>
+                  {/* <div>
                     <h4 className="mb-1 font-semibold text-gray-900">Email</h4>
                     <p className="text-gray-600">info@findicar.com</p>
                     <p className="text-gray-600">support@findicar.com</p>
-                  </div>
+                  </div> */}
                 </div>
 
                 <div className="flex items-start">
-                  <div 
+                  <div
                     className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 mr-4"
                     style={{ backgroundColor: 'rgba(0, 191, 165, 0.1)' }}
                   >
@@ -193,17 +166,36 @@ export function ContactModal({ isOpen, onClose }: ContactModalProps) {
 
             {/* Contact Form */}
             <div>
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                {/* Success/Error Message */}
+                {message && (
+                  <div
+                    className={`p-4 rounded-lg flex items-start space-x-3 ${isSuccess
+                        ? 'bg-green-50 border border-green-200'
+                        : 'bg-red-50 border border-red-200'
+                      }`}
+                  >
+                    {isSuccess ? (
+                      <CheckCircle size={20} className="text-green-600 flex-shrink-0 mt-0.5" />
+                    ) : (
+                      <AlertCircle size={20} className="text-red-600 flex-shrink-0 mt-0.5" />
+                    )}
+                    <p
+                      className={`text-sm ${isSuccess ? 'text-green-800' : 'text-red-800'
+                        }`}
+                    >
+                      {message}
+                    </p>
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Full Name *
                   </label>
                   <input
                     type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    required
+                    {...register("name", { required: true })}
                     placeholder="John Doe"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-0 text-gray-800"
                   />
@@ -216,10 +208,7 @@ export function ContactModal({ isOpen, onClose }: ContactModalProps) {
                     </label>
                     <input
                       type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      required
+                      {...register("email", { required: true })}
                       placeholder="your@email.com"
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-0 text-gray-800"
                     />
@@ -231,9 +220,7 @@ export function ContactModal({ isOpen, onClose }: ContactModalProps) {
                     </label>
                     <input
                       type="tel"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleChange}
+                      {...register("phone")}
                       placeholder="+1 (555) 123-4567"
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-0 text-gray-800"
                     />
@@ -245,10 +232,7 @@ export function ContactModal({ isOpen, onClose }: ContactModalProps) {
                     Subject *
                   </label>
                   <select
-                    name="subject"
-                    value={formData.subject}
-                    onChange={handleChange}
-                    required
+                    {...register("subject", { required: true })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-0 text-gray-800 max-w-full"
                   >
                     <option value="">Select a subject</option>
@@ -265,10 +249,7 @@ export function ContactModal({ isOpen, onClose }: ContactModalProps) {
                     Message *
                   </label>
                   <textarea
-                    name="message"
-                    value={formData.message}
-                    onChange={handleChange}
-                    required
+                    {...register("message", { required: true })}
                     rows={5}
                     placeholder="Tell us how we can help you..."
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-0 text-gray-800 resize-none"
@@ -277,7 +258,8 @@ export function ContactModal({ isOpen, onClose }: ContactModalProps) {
 
                 <button
                   type="submit"
-                  className="w-full px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors flex items-center justify-center space-x-2"
+                  className="w-full px-6 py-3 text-white rounded-lg transition-colors flex items-center justify-center space-x-2 hover:opacity-90"
+                  style={{ backgroundColor: 'var(--primary)' }}
                 >
                   <Send size={20} />
                   <span>Send Message</span>
