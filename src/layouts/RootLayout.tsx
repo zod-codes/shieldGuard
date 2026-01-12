@@ -20,7 +20,7 @@ export function RootLayout() {
   };
 
   const isHomePage = location.pathname === '/';
-  const isTrue = false;
+  const isTrue = true;
 
   return (
     <div className="min-h-screen">

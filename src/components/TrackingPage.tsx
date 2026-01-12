@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Package, ArrowLeft, MapPin, Truck, CheckCircle, Clock } from 'lucide-react';
 
+const isTrue = false;
+
 interface TrackingPageProps {
   isOpen: boolean;
   onClose: () => void;
@@ -12,9 +14,7 @@ export function TrackingPage({ isOpen, onClose }: TrackingPageProps) {
 
   const handleTrack = (e: React.FormEvent) => {
     e.preventDefault();
-    if (trackingNumber.trim()) {
-      setShowResults(true);
-    }
+    if (trackingNumber.trim()) setShowResults(isTrue && true);
   };
 
   if (!isOpen) return null;

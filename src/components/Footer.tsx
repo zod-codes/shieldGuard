@@ -1,7 +1,12 @@
-import { Mail, Phone, MapPin, Facebook, X, Linkedin, Instagram } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { Mail, Phone, MapPin, Facebook, X, Linkedin, Instagram } from 'lucide-react';
 
 export function Footer() {
+
+  const handleWhatsAppClick = () => {
+    window.open('https://wa.me/message/T2WKXBUB4BB4O1', '_blank'); // Replace with your WhatsApp number
+  };
+
   const handleSocialClick = (platform: string) => {
     const urls: Record<string, string> = {
       facebook: 'https://facebook.com',
@@ -124,11 +129,18 @@ export function Footer() {
           <div id="contacts">
             <h4 className="mb-4">Contact</h4>
             <ul className="space-y-3">
-              <li className="flex items-start text-gray-400">
-                <a href='https://wa.me/message/T2WKXBUB4BB4O1' className='flex'>
-                  <Phone size={18} className="mr-3 mt-1 flex-shrink-0" style={{ color: 'var(--primary)' }} />
-                  <span>+1 (512) 560-0649</span>
-                </a>
+              <li
+                className="flex items-start text-gray-400"
+              >
+                <Phone size={18} className="mr-3 mt-1 flex-shrink-0" style={{ color: 'var(--primary)' }} />
+                <span>+7 (356) 594-0689 (Headquarters ~ AI assistant)</span>
+              </li>
+              <li
+                onClick={handleWhatsAppClick}
+                className="flex items-start text-gray-400"
+              >
+                <Phone size={18} className="mr-3 mt-1 flex-shrink-0" style={{ color: 'var(--primary)' }} />
+                <span>+1 (512) 560-0649 (sales rep)</span>
               </li>
               <li className="flex items-start text-gray-400">
                 <Mail size={18} className="mr-3 mt-1 flex-shrink-0" style={{ color: 'var(--primary)' }} />

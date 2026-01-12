@@ -34,13 +34,13 @@ export function Header({ onTrackingClick, onContactClick }: HeaderProps) {
         top,
         behavior: 'smooth'
       });
-    }
+    };
     setIsMenuOpen(false);
   };
 
   const handleNavigate = (path: string) => {
-    navigate(path);
     setIsMenuOpen(false);
+    navigate(path);
   };
 
   const isTrue = false;
@@ -151,25 +151,25 @@ export function Header({ onTrackingClick, onContactClick }: HeaderProps) {
               >
                 Advantages
               </button> */}
-              <Link
-                to="/about-us"
+              <button
+                onClick={() => handleNavigate("/about-us")}
                 className="text-gray-600 hover:text-gray-900 transition-colors py-2 text-left"
               >
                 About Us
-              </Link>
+              </button>
               {/* <button
                 onClick={() => handleSmoothScroll('contacts')}
                 className="text-gray-600 hover:text-gray-900 transition-colors py-2 text-left"
               >
                 Contacts
               </button> */}
-              {/* <Link
-                to="/careers"
+              {/* <button
+                onClick={() => handleNavigate("/careers")}
                 className="text-gray-600 hover:text-gray-900 transition-colors py-2"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Careers
-              </Link> */}
+              </button> */}
               <button
                 onClick={handleContactClick}
                 className="px-6 py-2.5 rounded-lg text-white transition-colors w-full hover:opacity-90"

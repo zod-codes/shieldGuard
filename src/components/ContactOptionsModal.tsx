@@ -44,9 +44,7 @@ export function ContactOptionsModal({ isOpen, onClose }: ContactOptionsModalProp
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50"
       onClick={(e) => {
-        if (e.target === e.currentTarget) {
-          onClose();
-        }
+        if (e.target === e.currentTarget) onClose();
       }}
     >
       <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 relative">
