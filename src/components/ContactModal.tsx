@@ -112,7 +112,7 @@ export function ContactModal({ isOpen, onClose }: ContactModalProps) {
                   </div>
                   <div>
                     <h4 className="mb-1 font-semibold text-gray-900">Phone</h4>
-                    <p className="text-gray-600">+1 (512) 560-0649</p>
+                    <p className="text-gray-600">+7 (356) 594-0689</p>
                   </div>
                 </div>
 
@@ -139,7 +139,7 @@ export function ContactModal({ isOpen, onClose }: ContactModalProps) {
                   </div>
                   <div>
                     <h4 className="mb-1 font-semibold text-gray-900">Office</h4>
-                    <p className="text-gray-600">Moscow, 123, Primyrnaya St</p>
+                    <p className="text-gray-600">Moscow, 123, Primyrnaya St, Headquarter</p>
                   </div>
                 </div>
               </div>
