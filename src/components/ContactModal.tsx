@@ -240,6 +240,7 @@ export function ContactModal({ isOpen, onClose }: ContactModalProps) {
                     <option value="quote">Request a Quote</option>
                     <option value="support">Technical Support</option>
                     <option value="partnership">Partnership Opportunity</option>
+                    <option value="Job">Job Application</option>
                     <option value="other">Other</option>
                   </select>
                 </div>

@@ -30,7 +30,7 @@ const HUBS = {
   canberra: { coords: [149.1287, -35.2820] as [number, number], name: "Canberra", country: "Australia" },
   capeTown: { coords: [18.4241, -33.9249] as [number, number], name: "Cape Town", country: "South Africa" },
   singapore: { coords: [103.8198, 1.3521] as [number, number], name: "Singapore", country: "Singapore" },
-  addisAbaba: { coords: [38.7421, 9.0227] as [number, number], name: "Addis Ababa", country: "Ethiopia" },
+  // addisAbaba: { coords: [38.7421, 9.0227] as [number, number], name: "Addis Ababa", country: "Ethiopia" },
   antananarivo: { coords: [47.5315, -18.8792] as [number, number], name: "Antananarivo", country: "Madagascar" },
 };
 
@@ -118,7 +118,7 @@ export function MapSection() {
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
   // 3. Generate the network connections (e.g., everything within 4500km)
-  const network = useMemo(() => generateNearbyConnections(HUBS, 6500), []);
+  const network = useMemo(() => generateNearbyConnections(HUBS, 6850), []);
 
   useEffect(() => {
     // Using 50m resolution for a more professional, detailed look
@@ -194,7 +194,7 @@ export function MapSection() {
           {/* THE TOOLTIP - Positioned absolutely relative to the map container */}
           {hoveredHub && hoveredHub.x !== undefined && hoveredHub.y !== undefined && (
             <div
-              className="absolute z-50 pointer-events-none bg-slate-900/90 border border-blue-500/50 p-3 rounded-lg backdrop-blur-md shadow-2xl transition-all duration-200"
+              className="absolute z-[200] pointer-events-none bg-slate-900/90 border border-blue-500/50 p-3 rounded-lg backdrop-blur-md shadow-2xl transition-all duration-200"
               style={{
                 left: hoveredHub.x + 10,
                 top: hoveredHub.y - 30,

@@ -5,6 +5,7 @@ import { Footer } from '../components/Footer';
 import { TrackingPage } from '../components/TrackingPage';
 import { ContactModal } from '../components/ContactModal';
 import { ScrollToTop } from '../components/Scrolltotop';
+import { usePageTitle } from '../hooks/use-page-title';
 
 export function RootLayout() {
   const [showTrackingPage, setShowTrackingPage] = useState(false);
@@ -20,7 +21,8 @@ export function RootLayout() {
   };
 
   const isHomePage = location.pathname === '/';
-  const isTrue = true;
+
+  usePageTitle();
 
   return (
     <div className="min-h-screen">
@@ -38,7 +40,7 @@ export function RootLayout() {
 
       {/* Mobile Tracking Page */}
       <TrackingPage
-        isOpen={isTrue&&showTrackingPage}
+        isOpen={showTrackingPage}
         onClose={() => setShowTrackingPage(false)}
       />
 

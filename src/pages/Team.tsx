@@ -126,7 +126,7 @@ export function Team() {
           <div className="max-w-3xl">
             <h1 className="text-white mb-6">Meet Our Team</h1>
             <p className="text-white text-lg md:text-xl opacity-90">
-              The talented people behind Findicar, working together to revolutionize logistics
+              The talented people behind Shield Guard, working together to revolutionize logistics
             </p>
           </div>
         </div>
