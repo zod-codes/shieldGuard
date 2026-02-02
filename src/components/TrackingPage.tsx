@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { Package, ArrowLeft, MapPin, Truck, CheckCircle, Clock } from 'lucide-react';
-
-const isTrue = false;
+import { Package, ArrowLeft, Search, AlertCircle, Loader2, } from 'lucide-react';
+import TrackingDisplay from './TrackingDisplay.tsx';
 
 interface TrackingPageProps {
   isOpen: boolean;
@@ -11,61 +10,62 @@ interface TrackingPageProps {
 export function TrackingPage({ isOpen, onClose }: TrackingPageProps) {
   const [trackingNumber, setTrackingNumber] = useState('');
   const [showResults, setShowResults] = useState(false);
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleTrack = (e: React.FormEvent) => {
+  const handleTrack = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (trackingNumber.trim()) setShowResults(isTrue && true);
+
+    // Reset states
+    setError('');
+    setShowResults(false);
+
+    // Client-side Validation
+    const cleanedNumber = trackingNumber.trim();
+
+    if (!cleanedNumber) {
+      setError('Please enter a tracking number');
+      return;
+    }
+
+    if (cleanedNumber.length < 8) {
+      setError('Tracking number must be at least 8 characters');
+      return;
+    }
+
+    // 3. Simulate API Call with Error Handling
+    setIsLoading(true);
+
+    try {
+      // Simulate network delay (remove this in real app)
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // Mock "Not Found" logic (Replace with your real API check)
+      if (cleanedNumber === 'INVALID' || cleanedNumber !== 'FD-2026-001234') {
+        throw new Error('Tracking number not found. Please check and try again.');
+      }
+
+      // If successful:
+      setShowResults(true);
+    } catch (err) {
+      // Capture the error message
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleReset = () => {
+    setShowResults(false);
+    setTrackingNumber('');
+    setError('');
   };
 
   if (!isOpen) return null;
 
-  const journeyStages = [
-    {
-      status: 'completed',
-      title: 'Order Placed',
-      location: 'Moscow, Russia',
-      date: 'Dec 28, 2025, 10:30 AM',
-      icon: Package
-    },
-    {
-      status: 'completed',
-      title: 'Received at Warehouse',
-      location: 'Moscow Warehouse',
-      date: 'Dec 29, 2025, 8:15 AM',
-      icon: Package
-    },
-    {
-      status: 'completed',
-      title: 'In Transit',
-      location: 'Nizhny Novgorod',
-      date: 'Dec 30, 2025, 2:20 PM',
-      icon: Truck
-    },
-    {
-      status: 'current',
-      title: 'Arrived at Sorting Center',
-      location: 'Kazan',
-      date: 'Jan 2, 2026, 9:45 AM',
-      icon: MapPin
-    },
-    {
-      status: 'pending',
-      title: 'On the Way to Recipient',
-      location: 'Ufa',
-      date: 'Expected Jan 3',
-      icon: Truck
-    },
-    {
-      status: 'pending',
-      title: 'Delivered',
-      location: 'Ufa, Russia',
-      date: 'Expected Jan 4',
-      icon: CheckCircle
-    }
-  ];
-
   return (
     <div className="fixed inset-0 z-50 bg-white overflow-y-auto">
+      
       {/* Header */}
       <div className="sticky top-0 z-10 p-4 border-b border-gray-200 flex items-center space-x-3" style={{ backgroundColor: 'var(--primary)' }}>
         <button
@@ -78,9 +78,9 @@ export function TrackingPage({ isOpen, onClose }: TrackingPageProps) {
       </div>
 
       {/* Content */}
-      <div className="p-4">
+      <div className="p-4 max-w-lg mx-auto">
         {!showResults ? (
-          /* Search Form */
+          /* --- Search Form --- */
           <div className="pt-8">
             <div className="flex items-center justify-center mb-8">
               <div
@@ -90,125 +90,62 @@ export function TrackingPage({ isOpen, onClose }: TrackingPageProps) {
                 <Package size={40} style={{ color: 'var(--primary)' }} />
               </div>
             </div>
-            <h2 className="text-center mb-2">Track Your Shipment</h2>
+            <h2 className="text-center mb-2 text-xl font-semibold">Track Your Shipment</h2>
             <p className="text-center text-gray-600 mb-8">
               Enter your tracking number
             </p>
 
             <form onSubmit={handleTrack} className="space-y-4">
-              <input
-                type="text"
-                value={trackingNumber}
-                onChange={(e) => setTrackingNumber(e.target.value)}
-                placeholder="Enter tracking number"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-0 text-gray-800"
-              />
+              <div className="space-y-2">
+                <div className="relative">
+                  <Search className="ml-1 absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                  <input
+                    type="text"
+                    value={trackingNumber}
+                    onChange={(e) => {
+                      setTrackingNumber(e.target.value);
+                      if (error) setError(''); // Clear error when user types
+                    }}
+                    placeholder="Enter tracking number"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-0 text-gray-800 pl-[8%]"
+                  />
+                </div>
+
+                {/* Error Message Display */}
+                {error && (
+                  <div className="mt-3 flex items-center text-red-500 text-sm animate-in fade-in slide-in-from-top-1">
+                    <AlertCircle size={16} className="mr-1" />
+                    {error}
+                  </div>
+                )}
+              </div>
+
               <button
                 type="submit"
-                className="w-full px-6 py-3 rounded-lg text-white transition-colors"
+                disabled={isLoading}
+                className="w-full px-6 py-3 rounded-lg text-white transition-colors flex items-center justify-center font-medium"
                 style={{ backgroundColor: 'var(--primary)' }}
               >
-                Track Shipment
+                {isLoading ? (
+                  <div className="flex items-center gap-2">
+                    <Loader2 size={18} className="animate-spin" />
+                    <span>Checking...</span>
+                  </div>
+                ) : (
+                  'Track Shipment'
+                )}
               </button>
             </form>
           </div>
         ) : (
-          /* Tracking Results */
-          <div className="pb-8">
-            {/* Tracking Number */}
-            <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-600 mb-1">Tracking Number</p>
-              <p className="font-semibold">{trackingNumber || 'FD-2026-001234'}</p>
-            </div>
+          /* --- Tracking Results (LIVE) --- */
+          <div className="pb-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
-            {/* Current Status Card */}
-            <div className="bg-gray-50 rounded-xl p-4 mb-6">
-              <div className="flex items-start space-x-3">
-                <div
-                  className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
-                  style={{ backgroundColor: 'var(--primary)' }}
-                >
-                  <MapPin size={24} className="text-white" />
-                </div>
-                <div className="flex-1">
-                  <div className="mb-2">
-                    <span className="px-3 py-1 rounded-full text-sm" style={{ backgroundColor: 'var(--primary)', color: 'white' }}>
-                      In Transit
-                    </span>
-                  </div>
-                  <h4 className="mb-1">Current Location</h4>
-                  <p className="text-gray-600 mb-2">Sorting Center, Kazan</p>
-                  <div className="flex items-center text-gray-500 text-sm">
-                    <Clock size={14} className="mr-2" />
-                    <span>Updated: Jan 2, 2026, 9:45 AM</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <TrackingDisplay trackingNumber={trackingNumber} isActive={showResults} />
 
-            {/* Journey Timeline */}
-            <div className="space-y-4 mb-6">
-              <h4 className="mb-4">Shipment History</h4>
-
-              {journeyStages.map((stage, index) => {
-                const Icon = stage.icon;
-                const isCompleted = stage.status === 'completed';
-                const isCurrent = stage.status === 'current';
-                const isPending = stage.status === 'pending';
-
-                return (
-                  <div key={index} className="relative">
-                    {/* Connecting Line */}
-                    {index !== journeyStages.length - 1 && (
-                      <div
-                        className="absolute left-6 top-12 w-0.5 h-full -mb-4"
-                        style={{
-                          backgroundColor: isCompleted ? 'var(--primary)' : '#e5e7eb'
-                        }}
-                      />
-                    )}
-
-                    {/* Stage */}
-                    <div className={`flex items-start space-x-3 pb-4 ${isPending ? 'opacity-50' : ''}`}>
-                      <div
-                        className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 z-10 border-4 border-white"
-                        style={{
-                          backgroundColor: isCompleted || isCurrent ? 'var(--primary)' : '#e5e7eb'
-                        }}
-                      >
-                        <Icon size={20} className={isCompleted || isCurrent ? 'text-white' : 'text-gray-400'} />
-                      </div>
-
-                      <div className="flex-1 pt-2">
-                        <h4 className={`mb-1 ${isCurrent ? 'text-black' : ''}`}>
-                          {stage.title}
-                        </h4>
-                        <p className="text-gray-600 mb-1 text-sm">{stage.location}</p>
-                        <p className="text-gray-500 text-sm">{stage.date}</p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Estimated Delivery */}
-            <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
-              <div className="flex items-center space-x-3">
-                <Clock size={20} style={{ color: 'var(--primary)' }} />
-                <div>
-                  <p className="text-sm text-gray-600">Estimated Delivery Date</p>
-                  <p className="font-semibold">January 4, 2026</p>
-                </div>
-              </div>
-            </div>
-
-            {/* New Search Button */}
+            {/* Reset Button */}
             <button
-              onClick={() => {
-                setShowResults(false);
-                setTrackingNumber('');
-              }}
+              onClick={handleReset}
               className="w-full mt-6 px-6 py-3 rounded-lg border-2 transition-colors"
               style={{ borderColor: 'var(--primary)', color: 'var(--primary)' }}
             >

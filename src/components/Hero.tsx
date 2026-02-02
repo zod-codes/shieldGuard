@@ -1,4 +1,4 @@
-import { Package, ArrowRight } from 'lucide-react';
+import { Package, ArrowRight, AlertCircle, Loader2 } from 'lucide-react';
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TrackingPopup } from './TrackingPopup';
@@ -7,16 +7,55 @@ interface HeroProps {
   onTrackingClick?: () => void;
 }
 
-const isTrue = false;
-
 export function Hero({ onTrackingClick }: HeroProps) {
   const [trackingNumber, setTrackingNumber] = useState('');
   const [showTrackingPopup, setShowTrackingPopup] = useState(false);
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleTrack = useCallback((e: React.FormEvent) => {
+  const handleTrack = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
-    if (trackingNumber.trim()) {
+
+    // Reset states
+    setError('');
+    setShowTrackingPopup(false);
+
+    // Client-side Validation
+    const cleanedNumber = trackingNumber.trim();
+
+    if (!cleanedNumber) {
+      setError('Please enter a tracking number');
+      return;
+    }
+
+    if (cleanedNumber.length < 8) {
+      setError('Tracking number must be at least 8 characters');
+      return;
+    }
+
+    // 3. Simulate API Call with Error Handling
+    setIsLoading(true);
+
+    try {
+      // Simulate network delay (remove this in real app)
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // Mock "Not Found" logic (Replace with your real API check)
+      if (cleanedNumber === 'INVALID' || cleanedNumber !== 'FD-2026-001234') {
+        throw new Error('Tracking number not found. Please check and try again.');
+      }
+
+      // If successful:
+      setShowTrackingPopup(true);
+    } catch (err) {
+      // Capture the error message
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+    } finally {
+      setIsLoading(false);
+    }
+
+    if (trackingNumber.trim() && trackingNumber === 'FD-2026-001234') {
       setShowTrackingPopup(true);
     }
   }, [trackingNumber]);
@@ -95,21 +134,36 @@ export function Hero({ onTrackingClick }: HeroProps) {
             <Package size={20} style={{ color: 'var(--primary)' }} />
             <h4 className="text-gray-800">Track Shipment</h4>
           </div>
-          <form onSubmit={handleTrack} className="flex flex-col sm:flex-row gap-2">
-            <input
-              type="text"
-              value={trackingNumber}
-              onChange={(e) => setTrackingNumber(e.target.value)}
-              placeholder="Enter tracking number"
-              className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-0 text-gray-800"
-            />
-            <button
-              type="submit"
-              className="px-6 py-2.5 rounded-lg text-white transition-colors whitespace-nowrap hover:opacity-90"
-              style={{ backgroundColor: 'var(--primary)' }}
-            >
-              Track
-            </button>
+          <form onSubmit={handleTrack} className="flex flex-col">
+            <div className="flex flex-row sm:flex-col gap-2">
+              <input
+                type="text"
+                value={trackingNumber}
+                onChange={(e) => setTrackingNumber(e.target.value)}
+                placeholder="Enter tracking number"
+                className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-0 text-gray-800"
+              />
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="px-6 py-2.5 rounded-lg text-white transition-colors whitespace-nowrap hover:opacity-90"
+                style={{ backgroundColor: 'var(--primary)' }}
+              >
+                {isLoading ? (
+                  <div className="flex items-center gap-2">
+                    <Loader2 size={18} className="animate-spin" />
+                  </div>
+                ) : (
+                  'Track'
+                )}
+              </button>
+            </div>
+            {error && (
+              <div className="mt-3 flex items-center text-red-500 text-sm animate-in fade-in slide-in-from-top-1">
+                <AlertCircle size={16} className="mr-1" />
+                {error}
+              </div>
+            )}
           </form>
         </div>
       </div>
@@ -117,7 +171,7 @@ export function Hero({ onTrackingClick }: HeroProps) {
       {/* Tracking Popup - Desktop Only */}
       <div className="hidden md:block">
         <TrackingPopup
-          isOpen={isTrue && showTrackingPopup}
+          isOpen={showTrackingPopup}
           onClose={() => setShowTrackingPopup(false)}
           trackingNumber={trackingNumber || 'FD-2026-001234'}
         />

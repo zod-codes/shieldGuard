@@ -18,7 +18,7 @@ export function useSmartScroll(offset = 80) {
         const timer = setTimeout(() => {
             const element = document.getElementById(id);
             if (element) {
-                const top = (element.getBoundingClientRect().top + window.scrollY )- offset;
+                const top = (element.getBoundingClientRect().top + window.scrollY ) - offset;
 
                 window.scrollTo({
                     top,
