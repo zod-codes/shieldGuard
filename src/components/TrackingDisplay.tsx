@@ -1,34 +1,25 @@
-import { useEffect } from 'react';
 import { Clock, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
 import { useJourneyStages } from '../hooks/use-journey-stages';
 import { useLiveTracking } from '../hooks/use-live-tracking';
 import { DateUtils } from '../utils/DateUtils';
+import helper from '../utils/helpers.ts';
 
 interface TrackingDisplayProps {
     trackingNumber: string;
     isActive: boolean;
 }
 
+const { convertTime } = helper
+
 const TrackingDisplay = ({ trackingNumber, isActive }: TrackingDisplayProps) => {
     const journeyStages = useJourneyStages(isActive);
-
-    const { activeStages, currentStatus, isInterrupted, resumeTracking } = useLiveTracking(journeyStages, isActive);
+    const { activeStages, currentStatus, isInterrupted } = useLiveTracking(journeyStages, isActive);
 
     const lastStage = activeStages.length > 0 ? activeStages[activeStages.length - 1] : null;
 
-    useEffect(() => {
-        const handleManualResume = () => {
-            console.log('Manual resume command received');
-            resumeTracking();
-        };
-
-        // Listen for the custom event
-        window.addEventListener('resumeTracking', handleManualResume);
-
-        return () => {
-            window.removeEventListener('resumeTracking', handleManualResume);
-        };
-    }, [resumeTracking]);
+    // Get the final delivery date from the last stage in the full journey
+    const finalDeliveryStage = journeyStages.length > 0 ? journeyStages[journeyStages.length - 1] : null;
+    const estimatedDeliveryDate = finalDeliveryStage?.date;
 
     // Check if the last stage is released
     const isReleased = lastStage?.status === 'released';
@@ -38,11 +29,11 @@ const TrackingDisplay = ({ trackingNumber, isActive }: TrackingDisplayProps) => 
             {/* Tracking Number */}
             <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-100">
                 <p className="text-sm text-gray-600 mb-1">Tracking Number</p>
-                <p className="font-semibold text-lg">{trackingNumber || 'FD-2026-001234'}</p>
+                <p className="font-semibold text-lg">{trackingNumber}</p>
             </div>
 
             {/* Current Status Card */}
-            <div className={`${isInterrupted ? 'bg-red-50 border border-red-100' : isReleased ? 'bg-green-50 border border-green-100' : 'bg-gray-50'} shadow-sm rounded-xl p-4 mb-6 relative overflow-hidden`}>
+            <div className={`${isInterrupted ? 'bg-red-50 border border-red-100' : isReleased ? 'bg-green-50 border border-green-100' : 'bg-gray-50 border border-gray-100'} shadow-sm rounded-xl p-4 mb-6 relative overflow-hidden`}>
                 <div className="flex items-start space-x-3">
                     <div
                         className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 transition-colors duration-300 ${isInterrupted ? 'bg-red-500' : isReleased ? 'bg-green-500' : ''}`}
@@ -83,20 +74,20 @@ const TrackingDisplay = ({ trackingNumber, isActive }: TrackingDisplayProps) => 
 
                     {activeStages.map((stage, index) => {
                         const Icon = stage.icon;
-                        const isCurrent = index === activeStages.length - 1;
-                        const isCompleted = !isCurrent;
-                        const hasException = stage.exceptions && stage.exceptions.reasons.length > 0;
+                        const isCurrent = stage.status === 'current';
+                        const isCompleted = stage.status === 'completed';
                         const isStageReleased = stage.status === 'released';
+                        const isException = stage.status === 'exception';
 
                         return (
-                            <div key={index} className="relative pb-8 last:pb-0 animate-in slide-in-from-bottom-2 duration-500">
+                            <div key={stage.id || index} className="relative pb-8 last:pb-0 animate-in slide-in-from-bottom-2 duration-500">
 
                                 {/* Connecting Line */}
                                 {index !== activeStages.length - 1 && (
                                     <div
                                         className="absolute left-[19px] top-10 w-0.5 h-full bg-gray-200"
                                         style={{
-                                            backgroundColor: isCompleted ? 'var(--primary)' : '#e5e7eb'
+                                            backgroundColor: (isCompleted || isStageReleased) ? 'var(--primary)' : '#e5e7eb'
                                         }}
                                     />
                                 )}
@@ -106,12 +97,18 @@ const TrackingDisplay = ({ trackingNumber, isActive }: TrackingDisplayProps) => 
 
                                     {/* Icon Bubble */}
                                     <div
-                                        className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 z-10 border-4 border-white shadow-sm transition-colors duration-500 ${hasException && !isStageReleased ? 'bg-red-500' : isStageReleased ? 'bg-green-500' : ''}`}
+                                        className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 z-10 border-4 border-white shadow-sm transition-colors duration-500 ${isException ? 'bg-red-500' :
+                                            isStageReleased ? 'bg-green-500' : ''
+                                            }`}
                                         style={{
-                                            backgroundColor: (!hasException || isStageReleased) && !isStageReleased ? (isCurrent || isCompleted ? 'var(--primary)' : '#e5e7eb') : undefined
+                                            backgroundColor: (!isException && !isStageReleased) ?
+                                                (isCurrent || isCompleted ? 'var(--primary)' : '#e5e7eb') :
+                                                undefined
                                         }}
                                     >
-                                        <Icon size={18} className={isCompleted || isCurrent || hasException || isStageReleased ? 'text-white' : 'text-gray-400'} />
+                                        <Icon size={18} className={
+                                            isCompleted || isCurrent || isException || isStageReleased ? 'text-white' : 'text-gray-400'
+                                        } />
                                     </div>
 
                                     {/* Text Content */}
@@ -120,22 +117,22 @@ const TrackingDisplay = ({ trackingNumber, isActive }: TrackingDisplayProps) => 
                                             {stage.title}
                                         </h4>
 
-                                        {/* Exception Details (Red) - Only show if NOT released */}
-                                        {hasException && !isStageReleased && (
+                                        {/* Exception Details (Red) - Only show if status is 'exception' */}
+                                        {isException && stage.exceptions && (
                                             <div className="mt-2 mb-2 bg-red-50 p-3 rounded-md border border-red-100">
                                                 <div className="text-red-800 text-xs font-bold uppercase mb-1 flex items-center">
                                                     <AlertCircle size={12} className="mr-1" />
-                                                    Estimated Delay: {stage.exceptions?.delay}
+                                                    Estimated Delay: {stage.exceptions.delay}
                                                 </div>
                                                 <ul className="list-disc list-inside text-xs text-red-600 space-y-1">
-                                                    {stage.exceptions?.reasons.map((reason, i) => (
+                                                    {stage.exceptions.reasons.map((reason, i) => (
                                                         <li key={i}>{reason}</li>
                                                     ))}
                                                 </ul>
                                             </div>
                                         )}
 
-                                        {/* Release Details (Green) - Show if released */}
+                                        {/* Release Details (Green) - Show if status is 'released' */}
                                         {isStageReleased && stage.exceptions?.release && (
                                             <div className="mt-2 mb-2 bg-green-50 p-3 rounded-md border border-green-100">
                                                 <div className="text-green-800 text-xs font-bold uppercase mb-1 flex items-center">
@@ -168,7 +165,12 @@ const TrackingDisplay = ({ trackingNumber, isActive }: TrackingDisplayProps) => 
                     <Clock size={20} style={{ color: 'var(--primary)' }} />
                     <div>
                         <p className="text-sm text-gray-600">Estimated Delivery Date</p>
-                        <p className="font-semibold">January 4, 2026</p>
+                        <p className="font-semibold">
+                            {estimatedDeliveryDate
+                                ? DateUtils.formatDateTime(estimatedDeliveryDate.getTime() + convertTime(48, 'hours', 'milliseconds'))
+                                : 'Calculating...'
+                            }
+                        </p>
                     </div>
                 </div>
             </div>

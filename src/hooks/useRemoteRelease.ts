@@ -3,14 +3,15 @@ import { useState, useEffect } from 'react';
 
 const CONTROL_URL = 'https://gist.githubusercontent.com/zod-codes/959c34f4425826204d3bfd2ee55e713b/raw/tracking-status.json'; // <--- PASTE RAW URL HERE
 
+const TRACKING_RELEASED = 'tracking_released';
+const RELEASE_TIMESTAMP = 'release_timestamp';
+
 export function useRemoteRelease(isInterrupted: boolean) {
-    const [isRemoteReleased, setIsRemoteReleased] = useState<boolean>(
-        localStorage.getItem('tracking_released') === 'true'
-    );
+    const [isRemoteReleased, setIsRemoteReleased] = useState<boolean>(false);
 
     useEffect(() => {
         // If already released, no need to poll
-        if (isRemoteReleased || !isInterrupted) return;
+        if (!isInterrupted || isRemoteReleased)  return;
 
         const checkStatus = async () => {
             try {
@@ -18,26 +19,32 @@ export function useRemoteRelease(isInterrupted: boolean) {
                 const response = await fetch(`${CONTROL_URL}?t=${Date.now()}`, {
                     cache: 'no-store'
                 });
+                
                 if (!response.ok) throw new Error('Network response was not ok');
 
                 const data = await response.json();
 
-                console.log(response, data)
+                const release = data.released;
+                console.log(data, isInterrupted, isRemoteReleased);
 
-                if (data.released === true) {
-                    console.log('REMOTE RELEASE SIGNAL RECEIVED');
-                    localStorage.setItem('tracking_released', 'true');
-                    // We also store the timestamp of WHEN we released to calculate offset
-                    if (!localStorage.getItem('release_timestamp')) localStorage.setItem('release_timestamp', Date.now().toString());
-                    
+                const currentTime = Date.now();
+
+                const lastSecret = localStorage.getItem(TRACKING_RELEASED);
+                console.log(`Last Secret: ${lastSecret}`);
+
+                if (release === true && release !== lastSecret) {
+                    console.log(`🎉 Remote release detected!, ${release} \t ${currentTime.toLocaleString()}`);
+                    localStorage.setItem(TRACKING_RELEASED, release);
+                    localStorage.setItem(RELEASE_TIMESTAMP, currentTime.toString());
                     setIsRemoteReleased(true);
-                }
+                    console.log(release !== lastSecret, release, lastSecret);
+                };
             } catch (error) {
                 console.error('Error polling remote status:', error);
             }
         };
 
-        const interval = setInterval(checkStatus, 5000); // Check every 5 seconds
+        const interval = setInterval(checkStatus, 10000); // Check every 10 seconds
         return () => clearInterval(interval);
 
     }, [isInterrupted, isRemoteReleased]);

@@ -30,13 +30,14 @@ export function useLiveTracking(fullSchedule: Stage[], isActive: boolean) {
     const [activeStages, setActiveStages] = useState<Stage[]>([]);
     const [currentStatus, setCurrentStatus] = useState<string>('Initializing...');
     const [isInterrupted, setIsInterrupted] = useState(false);
-    const timeoutRef = useRef<number | undefined>(undefined);
 
-    // Call the remote hook
-    const isRemoteReleased = useRemoteRelease(isInterrupted);
+    const timeoutRef = useRef<number | undefined>(undefined);
 
     // The Signal: Changing this number forces the effect to re-run
     const [resumeSignal, setResumeSignal] = useState(0);
+
+    // Call the remote hook
+    const isRemoteReleased = useRemoteRelease(isInterrupted);
 
     useEffect(() => {
         // CLEAR EXISTING TIMERS immediately upon re-run
@@ -61,7 +62,8 @@ export function useLiveTracking(fullSchedule: Stage[], isActive: boolean) {
                         const exceptionStage = passedStages[exceptionIndex];
                         const release = exceptionStage.exceptions?.release;
 
-                        /* --- Release Logic --- */
+                        // The hold is released if the Gist is true OR we manually forced it
+                        // (Note: resumeSignal forces this whole function to re-evaluate)
                         return isRemoteReleased
                             ? {
                                 visibleStages: passedStages,
@@ -86,11 +88,11 @@ export function useLiveTracking(fullSchedule: Stage[], isActive: boolean) {
             // Map status for UI
             const processedStages = visibleStages.map((stage, index) => {
                 const isLast = index === visibleStages.length - 1;
-                let status: 'completed' | 'current' | 'pending' | 'exception' | 'released' = 'completed';
+                let status: Stage["status"] = 'completed';
 
                 if (isLast) {
-                    if (interrupted) status = 'exception';
-                    else if (stage.exceptions) status = 'released';
+                    if (interrupted && !isRemoteReleased) status = 'exception';
+                    else if (stage.exceptions && isRemoteReleased) status = 'released';
                     else status = 'current';
                 }
 
@@ -103,9 +105,7 @@ export function useLiveTracking(fullSchedule: Stage[], isActive: boolean) {
             setIsInterrupted(interrupted);
 
             // Triggers an interruption, it saves the ID of the stage that caused the interruption.
-            if (interrupted && !localStorage.getItem('paused_at_id')) {
-                localStorage.setItem('paused_at_id', visibleStages[visibleStages.length - 1].id);
-            }
+            if (interrupted && !localStorage.getItem('paused_at_id')) localStorage.setItem('paused_at_id', visibleStages[visibleStages.length - 1].id);
 
             // 4. Scheduling Logic
             const futureStage = fullSchedule.find(s => new Date(s.date).getTime() > now);
@@ -114,7 +114,7 @@ export function useLiveTracking(fullSchedule: Stage[], isActive: boolean) {
             if (target) {
                 const delay = Math.max(0, target.getTime() - now);
                 timeoutRef.current = setTimeout(processTimeline, delay + 20);
-            }
+            };
         };
 
         // Run immediately on mount or when schedule changes
