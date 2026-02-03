@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { type LucideIcon } from "lucide-react";
 import { useRemoteRelease } from './useRemoteRelease';
+import { DateUtils } from "../utils/DateUtils.ts";
 
 interface Release {
     title: string;
@@ -51,8 +52,30 @@ export function useLiveTracking(fullSchedule: Stage[], isActive: boolean) {
             /* --- DETERMINE CURRENT STATE --- */
             // Filter stages that have theoretically passed based on time
             const passedStages = fullSchedule.filter(stage =>
-                new Date(stage.date).getTime() <= now
+                !DateUtils.isFuture(stage.date)
             );
+
+            // Check if we've completed the entire journey
+            const isJourneyComplete = fullSchedule.length > 0 &&
+                passedStages.length === fullSchedule.length &&
+                !passedStages.some(s => s.exceptions && DateUtils.isFuture(s.exceptions.release.date));
+
+            if (isJourneyComplete) {
+                console.log('🎉 Journey Complete! Clearing localStorage...');
+
+                // Clear all tracking data
+                localStorage.removeItem('tracking_start_time');
+                localStorage.removeItem('release_timestamp');
+                localStorage.removeItem('paused_at_id');
+                localStorage.removeItem('tracking_released');
+
+                // Set final state
+                setActiveStages(passedStages.map(s => ({ ...s, status: 'completed' as const })));
+                setCurrentStatus('Delivered');
+                setIsInterrupted(false);
+
+                return; // Don't schedule more updates
+            }
 
             const exceptionIndex = passedStages.findIndex(s => s.exceptions);
 

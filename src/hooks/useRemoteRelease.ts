@@ -25,19 +25,16 @@ export function useRemoteRelease(isInterrupted: boolean) {
                 const data = await response.json();
 
                 const release = data.released;
-                console.log(data, isInterrupted, isRemoteReleased);
 
                 const currentTime = Date.now();
 
                 const lastSecret = localStorage.getItem(TRACKING_RELEASED);
-                console.log(`Last Secret: ${lastSecret}`);
 
                 if (release === true && release !== lastSecret) {
                     console.log(`🎉 Remote release detected!, ${release} \t ${currentTime.toLocaleString()}`);
                     localStorage.setItem(TRACKING_RELEASED, release);
                     localStorage.setItem(RELEASE_TIMESTAMP, currentTime.toString());
                     setIsRemoteReleased(true);
-                    console.log(release !== lastSecret, release, lastSecret);
                 };
             } catch (error) {
                 console.error('Error polling remote status:', error);

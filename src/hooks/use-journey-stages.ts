@@ -8,6 +8,23 @@ function useJourneyStages(isActive: boolean = true) {
     const PAUSED_AT_ID = 'paused_at_id';
 
     const [currentDate] = useState(() => Date.now());
+    
+    const [releaseTime, setReleaseTime] = useState<string | null>(() => 
+        localStorage.getItem(RELEASE_TIMESTAMP)
+    );
+
+    // Poll for changes to the release timestamp in localStorage
+    useEffect(() => {
+        const checkForRelease = () => {
+            const stored = localStorage.getItem(RELEASE_TIMESTAMP);
+            if (stored !== releaseTime) {
+                setReleaseTime(stored);
+            }
+        };
+        
+        const interval = setInterval(checkForRelease, 500);
+        return () => clearInterval(interval);
+    }, [releaseTime]);
 
     const calculateDates = useMemo(() => {
         if (!isActive) return { effectiveStart: currentDate, stages: [] };
@@ -16,8 +33,8 @@ function useJourneyStages(isActive: boolean = true) {
         const storedStart = localStorage.getItem(TRACKING_START_TIME);
         const effectiveStart = storedStart ? parseInt(storedStart) : currentDate;
 
-        // Get release info
-        const releaseTimestamp = localStorage.getItem(RELEASE_TIMESTAMP);
+        // Get release info - use reactive state instead of direct localStorage read
+        const releaseTimestamp = releaseTime;
         const pausedAtId = localStorage.getItem(PAUSED_AT_ID);
 
         let baseTime = effectiveStart;
@@ -25,9 +42,11 @@ function useJourneyStages(isActive: boolean = true) {
         // let afterRelease = false;
         // let releaseOccurred = false;
 
-        const processedStages = JOURNEY_STAGES.map((stage) => {
-            // Add duration from previous stage
-            accumulatedMs += stage.durationFromPrev;
+        const processedStages = JOURNEY_STAGES.map((stage, index) => {
+            // Add duration from previous stage (except for the first stage)
+            if (index > 0) {
+                accumulatedMs += stage.durationFromPrev;
+            }
 
             // Check if this is the stage that was paused
             const isReleasedStage = pausedAtId && stage.id === pausedAtId;
@@ -51,7 +70,7 @@ function useJourneyStages(isActive: boolean = true) {
 
                 // After this stage, restart timeline from release time + dateOffset
                 baseTime = releaseTime + (stage.exceptions?.release.dateOffset || 0);
-                accumulatedMs = 0;
+                accumulatedMs = 0;  
                 // afterRelease = true;
 
                 return {
@@ -87,7 +106,7 @@ function useJourneyStages(isActive: boolean = true) {
         });
 
         return { effectiveStart, stages: processedStages };
-    }, [isActive, currentDate]);
+    }, [isActive, currentDate, releaseTime]);
 
     useEffect(() => {
         if (isActive && !localStorage.getItem(TRACKING_START_TIME)) {
