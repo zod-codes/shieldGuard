@@ -7,6 +7,11 @@ function useJourneyStages(isActive: boolean = true) {
     const RELEASE_TIMESTAMP = 'release_timestamp';
     const PAUSED_AT_ID = 'paused_at_id';
 
+    // This ensures every refresh is a "clean slate"
+    useEffect(() => {
+        localStorage.clear();
+    }, []);
+
     // Use the hardcoded start date as the "Now" reference
     const [fixedStart] = useState(() => new Date(SHIPMENT_START_DATE).getTime());
 
