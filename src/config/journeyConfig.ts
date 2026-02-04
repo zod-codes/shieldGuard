@@ -34,7 +34,7 @@ export const JOURNEY_STAGES = [
         title: 'Shipment Picked up.',
         location: 'Washington, DC',
         durationFromPrev: calculateDelayToUSTime(5, 0, 'America/New_york').milliseconds,
-        icon: Package
+        icon: Truck
     },
     {
         id: "marylandToll",
