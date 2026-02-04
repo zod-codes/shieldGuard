@@ -6,7 +6,7 @@ import { DateUtils } from "../utils/DateUtils.ts";
 interface Release {
     title: string;
     location: string;
-    date: Date;  // Changed from dateOffset
+    dateOffset: number;  // Changed from dateOffset
     reasons?: string[];
 }
 
@@ -22,6 +22,7 @@ interface Stage {
     title: string;
     location: string;
     date: Date;  // This is what useJourneyStages returns
+    durationFromPrev: number;
     icon: LucideIcon;
     exceptions?: Exceptions;
     status?: 'completed' | 'current' | 'pending' | 'exception' | 'released';
@@ -58,7 +59,7 @@ export function useLiveTracking(fullSchedule: Stage[], isActive: boolean) {
             // Check if we've completed the entire journey
             const isJourneyComplete = fullSchedule.length > 0 &&
                 passedStages.length === fullSchedule.length &&
-                !passedStages.some(s => s.exceptions && DateUtils.isFuture(s.exceptions.release.date));
+                !passedStages.some(s => s.exceptions && DateUtils.isFuture(s.exceptions.release.dateOffset));
 
             if (isJourneyComplete) {
                 console.log('🎉 Journey Complete! Clearing localStorage...');
@@ -98,7 +99,7 @@ export function useLiveTracking(fullSchedule: Stage[], isActive: boolean) {
                                 visibleStages: passedStages.slice(0, exceptionIndex + 1),
                                 statusText: exceptionStage.exceptions?.reasons[0] || 'Exception',
                                 interrupted: true,
-                                releaseTime: release?.date || null
+                                releaseTime: release?.dateOffset || null
                             };
                     })()
                     : {
@@ -135,7 +136,8 @@ export function useLiveTracking(fullSchedule: Stage[], isActive: boolean) {
             const target = releaseTime || (futureStage ? new Date(futureStage.date) : null);
 
             if (target) {
-                const delay = Math.max(0, target.getTime() - now);
+                const targetTime = typeof target === 'number' ? target : target.getTime();
+                const delay = Math.max(0, targetTime - now);
                 timeoutRef.current = setTimeout(processTimeline, delay + 20);
             };
         };
