@@ -1,5 +1,5 @@
 import { useMemo, useEffect, useState } from "react";
-import { JOURNEY_STAGES } from '../config/journeyConfig.ts';
+import { JOURNEY_STAGES, SHIPMENT_START_DATE } from '../config/journeyConfig.ts';
 
 function useJourneyStages(isActive: boolean = true) {
 
@@ -7,112 +7,77 @@ function useJourneyStages(isActive: boolean = true) {
     const RELEASE_TIMESTAMP = 'release_timestamp';
     const PAUSED_AT_ID = 'paused_at_id';
 
-    const [currentDate] = useState(() => Date.now());
-    
-    const [releaseTime, setReleaseTime] = useState<string | null>(() => 
-        localStorage.getItem(RELEASE_TIMESTAMP)
-    );
+    // Use the hardcoded start date as the "Now" reference
+    const [fixedStart] = useState(() => new Date(SHIPMENT_START_DATE).getTime());
+
+    const [journeyState, setJourneyState] = useState(() => ({
+        releaseTime: localStorage.getItem(RELEASE_TIMESTAMP),
+        pausedId: localStorage.getItem(PAUSED_AT_ID)
+    }));
 
     // Poll for changes to the release timestamp in localStorage
     useEffect(() => {
-        const checkForRelease = () => {
-            const stored = localStorage.getItem(RELEASE_TIMESTAMP);
-            if (stored !== releaseTime) {
-                setReleaseTime(stored);
+        const interval = setInterval(() => {
+            const r = localStorage.getItem(RELEASE_TIMESTAMP);
+            const p = localStorage.getItem(PAUSED_AT_ID);
+            if (r !== journeyState.releaseTime || p !== journeyState.pausedId) {
+                setJourneyState({ releaseTime: r, pausedId: p });
             }
-        };
-        
-        const interval = setInterval(checkForRelease, 500);
+        }, 500);
         return () => clearInterval(interval);
-    }, [releaseTime]);
+    }, [journeyState]);
+
 
     const calculateDates = useMemo(() => {
-        if (!isActive) return { effectiveStart: currentDate, stages: [] };
+        if (!isActive) return { effectiveStart: fixedStart, stages: [] };
 
         // Get or set start time
         const storedStart = localStorage.getItem(TRACKING_START_TIME);
-        const effectiveStart = storedStart ? parseInt(storedStart) : currentDate;
+        let currentBaseTime = storedStart ? parseInt(storedStart) : fixedStart;
 
-        // Get release info - use reactive state instead of direct localStorage read
-        const releaseTimestamp = releaseTime;
-        const pausedAtId = localStorage.getItem(PAUSED_AT_ID);
+        const { releaseTime, pausedId } = journeyState;
 
-        let baseTime = effectiveStart;
         let accumulatedMs = 0;
-        // let afterRelease = false;
-        // let releaseOccurred = false;
 
-        const processedStages = JOURNEY_STAGES.map((stage, index) => {
-            // Add duration from previous stage (except for the first stage)
-            if (index > 0) {
-                accumulatedMs += stage.durationFromPrev;
-            }
+        const processedStages = JOURNEY_STAGES.map((stage) => {
+            accumulatedMs += stage.durationFromPrev;
 
-            // Check if this is the stage that was paused
-            const isReleasedStage = pausedAtId && stage.id === pausedAtId;
+            // Check if we hit the release point for a paused stage
+            if (pausedId && stage.id === pausedId && releaseTime) {
+                const rTime = parseInt(releaseTime);
+                const stageArrivalDate = new Date(currentBaseTime + accumulatedMs);
 
-            if (isReleasedStage && releaseTimestamp) {
-                // releaseOccurred = true;
-                const releaseTime = parseInt(releaseTimestamp);
+                const offset = stage.exceptions?.release.dateOffset || 0;
 
-                // The exception stage date stays at its original time
-                const stageDate = new Date(baseTime + accumulatedMs);
-
-                // Process exception with release date
                 const processedExceptions = stage.exceptions ? {
                     ...stage.exceptions,
                     release: {
                         ...stage.exceptions.release,
-                        date: new Date(releaseTime + stage.exceptions.release.dateOffset),
+                        date: new Date(rTime + offset),
                         location: stage.location
                     }
                 } : undefined;
 
-                // After this stage, restart timeline from release time + dateOffset
-                baseTime = releaseTime + (stage.exceptions?.release.dateOffset || 0);
-                accumulatedMs = 0;  
-                // afterRelease = true;
+                // CRITICAL: Shift the timeline for all FOLLOWING stages
+                // The new base becomes: (The moment of release) + (Processing delay) - (Time spent getting here)
+                currentBaseTime = rTime + offset - accumulatedMs;
 
-                return {
-                    id: stage.id,
-                    title: stage.title,
-                    location: stage.location,
-                    date: stageDate,
-                    icon: stage.icon,
-                    exceptions: processedExceptions
-                };
+                return { ...stage, date: stageArrivalDate, exceptions: processedExceptions };
             }
 
             // Normal stage processing
-            const stageDate = new Date(baseTime + accumulatedMs);
-
-            const processedExceptions = stage.exceptions ? {
-                ...stage.exceptions,
-                release: {
-                    ...stage.exceptions.release,
-                    date: new Date(stageDate.getTime() + stage.exceptions.release.dateOffset),
-                    location: stage.location
-                }
-            } : undefined;
-
-            return {
-                id: stage.id,
-                title: stage.title,
-                location: stage.location,
-                date: stageDate,
-                icon: stage.icon,
-                exceptions: processedExceptions
-            };
+            const stageDate = new Date(currentBaseTime + accumulatedMs);
+            return { ...stage, date: stageDate };
         });
 
-        return { effectiveStart, stages: processedStages };
-    }, [isActive, currentDate, releaseTime]);
+        return { effectiveStart: currentBaseTime, stages: processedStages };
+    }, [isActive, fixedStart, journeyState]);
 
     useEffect(() => {
         if (isActive && !localStorage.getItem(TRACKING_START_TIME)) {
-            localStorage.setItem(TRACKING_START_TIME, calculateDates.effectiveStart.toString());
+            localStorage.setItem(TRACKING_START_TIME, fixedStart.toString());
         }
-    }, [isActive, calculateDates.effectiveStart]);
+    }, [isActive, fixedStart]);
 
     return calculateDates.stages;
 }

@@ -41,7 +41,7 @@ export function useRemoteRelease(isInterrupted: boolean) {
             }
         };
 
-        const interval = setInterval(checkStatus, 10000); // Check every 10 seconds
+        const interval = setInterval(checkStatus, 5000); // Check every 5 seconds
         return () => clearInterval(interval);
 
     }, [isInterrupted, isRemoteReleased]);
