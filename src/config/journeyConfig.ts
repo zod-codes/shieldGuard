@@ -23,10 +23,17 @@ const { calculateDelayToUSTime, convertTimeToAll } = helper;
 
 export const JOURNEY_STAGES = [
     {
+        id: "Processing",
+        title: 'Processing shipment...',
+        location: 'Warehouse',
+        durationFromPrev: 0, 
+        icon: Package
+    },
+    {
         id: "PickUp",
         title: 'Shipment Picked up.',
         location: 'Washington, DC',
-        durationFromPrev: 0,
+        durationFromPrev: calculateDelayToUSTime(5, 0, 'America/New_york').milliseconds,
         icon: Package
     },
     {
