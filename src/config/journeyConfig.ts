@@ -19,7 +19,7 @@ export interface JourneyStage {
     };
 }
 
-const { convertTimeToAll, } = helper;
+const { calculateDelayToUSTime, convertTimeToAll } = helper;
 
 export const JOURNEY_STAGES = [
     {
@@ -33,21 +33,21 @@ export const JOURNEY_STAGES = [
         id: "marylandToll",
         title: 'Passed I-95 Fort McHenry Tunnel Toll Facility (MDTA).',
         location: 'Maryland',
-        durationFromPrev: convertTimeToAll(5, 'seconds').milliseconds,
+        durationFromPrev: calculateDelayToUSTime(6, 45, 'America/New_york').milliseconds,
         icon: Truck
     },
     {
         id: "PennsylvaniaTurnpike",
         title: 'Entered Pennsylvania Turnpike (I-76).',
         location: 'Pennsylvania',
-        durationFromPrev: convertTimeToAll(18, 'seconds').milliseconds,
+        durationFromPrev: calculateDelayToUSTime(9, 30, 'America/New_york').milliseconds,
         icon: Truck
     },
     {
         id: "OhioSorting",
         title: 'Arrived at Sorting Center',
         location: 'Ohio / Indiana State Line',
-        durationFromPrev: convertTimeToAll(15, 'seconds').milliseconds,
+        durationFromPrev: calculateDelayToUSTime(14, 15, 'America/New_york').milliseconds,
         icon: MapPin,
         exceptions: {
             reasons: [
@@ -59,7 +59,7 @@ export const JOURNEY_STAGES = [
             release: {
                 title: 'REALESED PACREL',
                 location: 'Ohio / Indiana State Line',
-                dateOffset: convertTimeToAll(15, 'seconds').milliseconds,
+                dateOffset: convertTimeToAll(24, 'hours').milliseconds,
                 reasons: [
                     'Verification completed',
                     'State documentation cleared',
@@ -72,14 +72,14 @@ export const JOURNEY_STAGES = [
         id: "IndianaToll",
         title: 'Entered Indiana Toll Road.',
         location: 'Indiana',
-        durationFromPrev: convertTimeToAll(25, 'seconds').milliseconds,
+        durationFromPrev: calculateDelayToUSTime(7, 30, 'America/Indiana/Indianapolis').milliseconds,
         icon: Truck
     },
     {
         id: "IllinoisToll",
         title: 'On route to Illinois tollway',
         location: 'Illinois Tollway (I‑90)',
-        durationFromPrev: convertTimeToAll(30, 'seconds').milliseconds,
+        durationFromPrev: calculateDelayToUSTime(10, 30, 'America/Chicago').milliseconds,
         icon: MapPin,
         exceptions: {
             reasons: [
@@ -90,7 +90,7 @@ export const JOURNEY_STAGES = [
             release: {
                 title: 'HOLD RELEASED',
                 location: 'Illinois Tollway (I‑90)',
-                dateOffset: convertTimeToAll(30, 'seconds').milliseconds,
+                dateOffset: convertTimeToAll(24, 'hours').milliseconds,
                 reasons: [
                     'All verification checks completed',
                     'Shipment cleared for interstate continuation',
@@ -103,35 +103,35 @@ export const JOURNEY_STAGES = [
         id: "IowaTransit",
         title: 'Transit through state',
         location: 'Iowa',
-        durationFromPrev: convertTimeToAll(20, 'seconds').milliseconds,
+        durationFromPrev: calculateDelayToUSTime(1, 45, 'America/Chicago').milliseconds,
         icon: Truck
     },
     {
         id: "NebraskaTransit",
         title: 'Transit through state',
         location: 'Nebraska',
-        durationFromPrev: convertTimeToAll(8, 'seconds').milliseconds,
+        durationFromPrev: calculateDelayToUSTime(7, 0, 'America/Chicago').milliseconds,
         icon: Truck
     },
     {
         id: "WyomingTransit",
         title: 'Transit through state',
         location: ' Wyoming',
-        durationFromPrev: convertTimeToAll(18, 'seconds').milliseconds,
+        durationFromPrev: calculateDelayToUSTime(14, 0, 'America/Denver').milliseconds,
         icon: Truck
     },
     {
         id: "MontanaTransit",
         title: 'Transit through state',
         location: ' Montana',
-        durationFromPrev: convertTimeToAll(10, 'seconds').milliseconds,
+        durationFromPrev: calculateDelayToUSTime(19, 30, 'America/Denver').milliseconds,
         icon: Truck
     },
     {
         id: "IdahoExit",
         title: 'Entered Idaho',
         location: 'Idaho',
-        durationFromPrev: convertTimeToAll(7, 'seconds').milliseconds,
+        durationFromPrev: calculateDelayToUSTime(23, 0, 'America/Denver').milliseconds,
         icon: CheckCircle
     }
 ] as JourneyStage[]
