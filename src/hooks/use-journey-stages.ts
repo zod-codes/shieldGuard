@@ -4,8 +4,6 @@ import { JOURNEY_STAGES, SHIPMENT_START_DATE } from '../config/journeyConfig.ts'
 function useJourneyStages(isActive: boolean = true) {
 
     const TRACKING_START_TIME = 'tracking_start_time';
-    const RELEASE_TIMESTAMP = 'release_timestamp';
-    const PAUSED_AT_ID = 'paused_at_id';
 
     // This ensures every refresh is a "clean slate"
     useEffect(() => {
@@ -15,22 +13,36 @@ function useJourneyStages(isActive: boolean = true) {
     // Use the hardcoded start date as the "Now" reference
     const [fixedStart] = useState(() => new Date(SHIPMENT_START_DATE).getTime());
 
-    const [journeyState, setJourneyState] = useState(() => ({
-        releaseTime: localStorage.getItem(RELEASE_TIMESTAMP),
-        pausedId: localStorage.getItem(PAUSED_AT_ID)
-    }));
+    // 2. REAL STATE: Map specific stage IDs to their release timestamps
+    // Example: { "OhioSorting": 1738590000000, "IllinoisToll": 1738599000000 }
+    const [releases, setReleases] = useState<Record<string, number>>({});
 
-    // Poll for changes to the release timestamp in localStorage
+    // Poll for reactivity (so the UI updates instantly when storage changes)
     useEffect(() => {
-        const interval = setInterval(() => {
-            const r = localStorage.getItem(RELEASE_TIMESTAMP);
-            const p = localStorage.getItem(PAUSED_AT_ID);
-            if (r !== journeyState.releaseTime || p !== journeyState.pausedId) {
-                setJourneyState({ releaseTime: r, pausedId: p });
-            }
-        }, 500);
+        const syncStorageToState = () => {
+            const newReleases: Record<string, number> = {};            
+            let hasChanges = false;
+
+            JOURNEY_STAGES.forEach( stage => {
+                const key = `release_timestamp_${stage.id}`;
+                const storedValue = localStorage.getItem(key);
+
+                if (storedValue) {
+                    const timestamp = parseInt(storedValue);
+                    newReleases[stage.id] = timestamp
+
+                    // Check if this is new/different from the current state
+                    if (releases[stage.id] !== timestamp) hasChanges = true;
+                }
+            });
+
+            // Only update state if data actually changed (prevents re-renders)
+            if (hasChanges || Object.keys(newReleases).length !== Object.keys(newReleases).length) setReleases(newReleases);
+        };
+
+        const interval = setInterval(syncStorageToState, 500);
         return () => clearInterval(interval);
-    }, [journeyState]);
+    }, [releases]);
 
 
     const calculateDates = useMemo(() => {
@@ -40,34 +52,31 @@ function useJourneyStages(isActive: boolean = true) {
         const storedStart = localStorage.getItem(TRACKING_START_TIME);
         let currentBaseTime = storedStart ? parseInt(storedStart) : fixedStart;
 
-        const { releaseTime, pausedId } = journeyState;
-
         let accumulatedMs = 0;
 
-        const processedStages = JOURNEY_STAGES.map((stage) => {
-            accumulatedMs += stage.durationFromPrev;
+        const processedStages = JOURNEY_STAGES.map((stage, index) => {
+            if (index > 0) accumulatedMs += stage.durationFromPrev;
+
+            // USE THE STATE (Not LocalStorage directly)
+            const releaseTime = releases[stage.id];
 
             // Check if we hit the release point for a paused stage
-            if (pausedId && stage.id === pausedId && releaseTime) {
-                const rTime = parseInt(releaseTime);
-                const stageArrivalDate = new Date(currentBaseTime + accumulatedMs);
-
+            if (releaseTime) {
                 const offset = stage.exceptions?.release.dateOffset || 0;
+
+                // The new base becomes: (The moment of release) + (Processing delay) - (Time spent getting here)
+                currentBaseTime = releaseTime + offset - accumulatedMs;
 
                 const processedExceptions = stage.exceptions ? {
                     ...stage.exceptions,
                     release: {
                         ...stage.exceptions.release,
-                        date: new Date(rTime + offset),
+                        date: new Date(releaseTime + offset),
                         location: stage.location
                     }
                 } : undefined;
 
-                // CRITICAL: Shift the timeline for all FOLLOWING stages
-                // The new base becomes: (The moment of release) + (Processing delay) - (Time spent getting here)
-                currentBaseTime = rTime + offset - accumulatedMs;
-
-                return { ...stage, date: stageArrivalDate, exceptions: processedExceptions };
+                return { ...stage, date: new Date(currentBaseTime + accumulatedMs), exceptions: processedExceptions };
             }
 
             // Normal stage processing
@@ -76,7 +85,7 @@ function useJourneyStages(isActive: boolean = true) {
         });
 
         return { effectiveStart: currentBaseTime, stages: processedStages };
-    }, [isActive, fixedStart, journeyState]);
+    }, [isActive, fixedStart, releases]);
 
     useEffect(() => {
         if (isActive && !localStorage.getItem(TRACKING_START_TIME)) {

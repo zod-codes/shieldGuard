@@ -3,15 +3,21 @@ import { useState, useEffect } from 'react';
 
 const CONTROL_URL = 'https://gist.githubusercontent.com/zod-codes/959c34f4425826204d3bfd2ee55e713b/raw/tracking-status.json'; // <--- PASTE RAW URL HERE
 
-const TRACKING_RELEASED = 'tracking_released';
-const RELEASE_TIMESTAMP = 'release_timestamp';
-
 export function useRemoteRelease(isInterrupted: boolean) {
     const [isRemoteReleased, setIsRemoteReleased] = useState<boolean>(false);
 
     useEffect(() => {
+        // Get the specific stage we are currently stuck on
+        const currentPausedId = localStorage.getItem('paused_at_id');
+
+        // If we aren't interrupted, or if THIS specific stage is already released, stop polling
+        const isThisStageAlreadyReleased = currentPausedId && localStorage.getItem(`released_${currentPausedId}`) === 'true';
+
         // If already released, no need to poll
-        if (!isInterrupted || isRemoteReleased)  return;
+        if (!isInterrupted || isThisStageAlreadyReleased) {
+            setIsRemoteReleased(isThisStageAlreadyReleased || false);
+            return;
+        };
 
         const checkStatus = async () => {
             try {
@@ -19,21 +25,19 @@ export function useRemoteRelease(isInterrupted: boolean) {
                 const response = await fetch(`${CONTROL_URL}?t=${Date.now()}`, {
                     cache: 'no-store'
                 });
-                
+
                 if (!response.ok) throw new Error('Network response was not ok');
 
                 const data = await response.json();
-
-                const release = data.released;
-
+                const release: boolean = data.released;
                 const currentTime = Date.now();
 
-                const lastSecret = localStorage.getItem(TRACKING_RELEASED);
+                if (release === true && currentPausedId) {
+                    console.log(`🎉 Remote release detected for ${currentPausedId}!`);
 
-                if (release === true && release !== lastSecret) {
-                    console.log(`🎉 Remote release detected!, ${release} \t ${currentTime.toLocaleString()}`);
-                    localStorage.setItem(TRACKING_RELEASED, release);
-                    localStorage.setItem(RELEASE_TIMESTAMP, currentTime.toString());
+                    // Mark this specific stage as released
+                    localStorage.setItem(`released_${currentPausedId}`, release.toString());
+                    localStorage.setItem(`release_timestamp_${currentPausedId}`, currentTime.toString());
                     setIsRemoteReleased(true);
                 };
             } catch (error) {
