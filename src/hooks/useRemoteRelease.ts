@@ -1,14 +1,14 @@
 // src/hooks/useRemoteRelease.ts
 import { useState, useEffect } from 'react';
 
-const CONTROL_URL = 'https://gist.githubusercontent.com/zod-codes/959c34f4425826204d3bfd2ee55e713b/raw/tracking-status.json'; // <--- PASTE RAW URL HERE
+const CONTROL_URL = 'https://gist.githubusercontent.com/zod-codes/fa41f4050964353b4e0de5dc6db037fb/raw/tracking-status-test.json'; // <--- PASTE RAW URL HERE
 
 export function useRemoteRelease(isInterrupted: boolean) {
     const [isRemoteReleased, setIsRemoteReleased] = useState<boolean>(false);
 
     useEffect(() => {
         // Get the specific stage we are currently stuck on
-        const currentPausedId = localStorage.getItem('paused_at_id');
+        const currentPausedId = localStorage.getItem('paused_at_id') || false;
 
         // If we aren't interrupted, or if THIS specific stage is already released, stop polling
         const isThisStageAlreadyReleased = currentPausedId && localStorage.getItem(`released_${currentPausedId}`) === 'true';
@@ -22,15 +22,15 @@ export function useRemoteRelease(isInterrupted: boolean) {
         const checkStatus = async () => {
             try {
                 // Cache-busting to ensure we get the fresh file
-                const response = await fetch(`${CONTROL_URL}?t=${Date.now()}`, {
-                    cache: 'no-store'
-                });
+                const response = await fetch(`${CONTROL_URL}?t=${Date.now()}`, { cache: 'no-store' });
 
                 if (!response.ok) throw new Error('Network response was not ok');
 
                 const data = await response.json();
                 const release: boolean = data.released;
                 const currentTime = Date.now();
+
+                console.log(data);                
 
                 if (release === true && currentPausedId) {
                     console.log(`🎉 Remote release detected for ${currentPausedId}!`);
@@ -45,7 +45,7 @@ export function useRemoteRelease(isInterrupted: boolean) {
             }
         };
 
-        const interval = setInterval(checkStatus, 5000); // Check every 5 seconds
+        const interval = setInterval(checkStatus, 2500); // Check every 2.5 seconds
         return () => clearInterval(interval);
 
     }, [isInterrupted, isRemoteReleased]);

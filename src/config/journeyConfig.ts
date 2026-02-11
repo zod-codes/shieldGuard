@@ -5,7 +5,7 @@ export interface JourneyStage {
     id: string;
     title: string;
     location: string;
-    durationFromPrev: number; // ms
+    durationFromPrev?: number; // ms
     icon: LucideIcon;
     exceptions?: {
         reasons: string[];

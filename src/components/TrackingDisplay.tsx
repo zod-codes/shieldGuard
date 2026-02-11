@@ -28,7 +28,7 @@ const TrackingDisplay = ({ trackingNumber, isActive }: TrackingDisplayProps) => 
         <>
             {/* Tracking Number */}
             <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-100">
-                <p className="text-sm text-gray-600 mb-1">Tracking Number</p>
+                <p className="text-sm text-gray-600 mb-1">Tracking Number:</p>
                 <p className="font-semibold text-lg">{trackingNumber}</p>
             </div>
 

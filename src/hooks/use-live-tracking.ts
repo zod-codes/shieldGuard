@@ -6,7 +6,7 @@ import { DateUtils } from "../utils/DateUtils.ts";
 interface Release {
     title: string;
     location: string;
-    dateOffset: number;  // Changed from dateOffset
+    dateOffset: number;
     reasons?: string[];
 }
 
@@ -16,13 +16,12 @@ interface Exceptions {
     release: Release;
 }
 
-// This is the interface for stages AFTER processing by useJourneyStages
 interface Stage {
     id: string;
     title: string;
     location: string;
-    date: Date;  // This is what useJourneyStages returns
-    durationFromPrev: number;
+    date: Date;
+    durationFromPrev?: number;
     icon: LucideIcon;
     exceptions?: Exceptions;
     status?: 'completed' | 'current' | 'pending' | 'exception' | 'released';
@@ -34,131 +33,151 @@ export function useLiveTracking(fullSchedule: Stage[], isActive: boolean) {
     const [isInterrupted, setIsInterrupted] = useState(false);
 
     const timeoutRef = useRef<number | undefined>(undefined);
-
-    // The Signal: Changing this number forces the effect to re-run
     const [resumeSignal, setResumeSignal] = useState(0);
 
-    // Call the remote hook
+    // Call the hook - it will auto-detect the ID from localStorage
     const isRemoteReleased = useRemoteRelease(isInterrupted);
 
     useEffect(() => {
-        // CLEAR EXISTING TIMERS immediately upon re-run
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
         const processTimeline = () => {
             if (!isActive) return;
 
-            const now = new Date().getTime();
+            const now = Date.now();
 
-            /* --- DETERMINE CURRENT STATE --- */
-            // Filter stages that have theoretically passed based on time
+            // Get all stages that have reached their scheduled time
             const passedStages = fullSchedule.filter(stage =>
                 !DateUtils.isFuture(stage.date)
             );
 
-            // Check if we've completed the entire journey
-            const isJourneyComplete = fullSchedule.length > 0 &&
-                passedStages.length === fullSchedule.length &&
-                !passedStages.some(s => s.exceptions && DateUtils.isFuture(s.exceptions.release.dateOffset));
+            console.log("Passed stages:", passedStages.map(s => s.id))
 
-            if (isJourneyComplete) {
-                console.log('🎉 Journey Complete! Clearing localStorage...');
+            // Build visible queue - always show all passed stages
+            let visibleStages = [...passedStages];
+            let currentStatusText = 'Initializing...';
+            let interrupted = false;
+            let nextTargetTime: number | null = null;
 
-                // Clear all tracking data
-                localStorage.removeItem('tracking_start_time');
-                localStorage.removeItem('release_timestamp');
-                localStorage.removeItem('paused_at_id');
-                localStorage.removeItem('tracking_released');
+            // Find first UNRELEASED exception in passed stages
+            const unreleasedExceptionStage = passedStages.find(s =>
+                s.exceptions && localStorage.getItem(`released_${s.id}`) !== 'true'
+            );
 
-                // Set final state
-                setActiveStages(passedStages.map(s => ({ ...s, status: 'completed' as const })));
-                setCurrentStatus('Delivered');
-                setIsInterrupted(false);
+            if (unreleasedExceptionStage) {
+                // STUCK at unreleased exception
+                const exceptionIndex = passedStages.indexOf(unreleasedExceptionStage);
+                visibleStages = passedStages.slice(0, exceptionIndex + 1);
+                currentStatusText = unreleasedExceptionStage.exceptions?.reasons[0] || 'Exception';
+                interrupted = true;
 
-                return; // Don't schedule more updates
+                // Save where we're stuck
+                localStorage.setItem('paused_at_id', unreleasedExceptionStage.id);
+
+                // Check if it just got released
+                if (isRemoteReleased && localStorage.getItem(`release_${unreleasedExceptionStage.id}`) === 'true') {
+                    // Change status but don't advance yet
+                    currentStatusText = unreleasedExceptionStage.exceptions?.release.title || 'Released';
+                    interrupted = false;
+
+                    // Schedule resume at the release time
+                    const resumeTime = unreleasedExceptionStage.exceptions?.release.dateOffset;
+                    if (resumeTime) {
+                        nextTargetTime = resumeTime;
+                    }
+                    console.log("Gotten here");                    
+                };               
+            } else {
+                // No unreleased exceptions - check if last stage is a released exception
+                const lastStage = passedStages[passedStages.length - 1];
+
+                if (lastStage?.exceptions && localStorage.getItem(`released_${lastStage.id}`) === 'true') {
+                    // Show as released and schedule next stage
+                    currentStatusText = lastStage.exceptions.release.title || 'Released';
+                    const resumeTime = lastStage.exceptions.release.dateOffset;
+                    if (resumeTime && resumeTime > now) {
+                        nextTargetTime = resumeTime;
+                    } 
+                } else {
+                    // Normal progress
+                    currentStatusText = lastStage?.title || 'Processing...';
+                }
+
+                // Clear paused state if we've moved past it
+                const pausedId = localStorage.getItem('paused_at_id');
+                if (pausedId && pausedId !== lastStage?.id) {
+                    localStorage.removeItem('paused_at_id');
+                }
             }
 
-            const exceptionIndex = passedStages.findIndex(s => s.exceptions);
+            // Check for journey completion
+            const hasUnreleasedExceptions = passedStages.some(s => {
+                if (!s.exceptions) return false;
 
-            const { visibleStages, statusText, interrupted, releaseTime } =
-                exceptionIndex !== -1
-                    ? (() => {
-                        const exceptionStage = passedStages[exceptionIndex];
-                        const release = exceptionStage.exceptions?.release;
+                // Check if this exception has the "Green Light" in storage
+                const isReleased = localStorage.getItem(`released_${s.id}`) === 'true';
 
-                        // The hold is released if the Gist is true OR we manually forced it
-                        // (Note: resumeSignal forces this whole function to re-evaluate)
-                        return isRemoteReleased
-                            ? {
-                                visibleStages: passedStages,
-                                statusText: release?.title || 'Released',
-                                interrupted: false,
-                                releaseTime: null,
-                            }
-                            : {
-                                visibleStages: passedStages.slice(0, exceptionIndex + 1),
-                                statusText: exceptionStage.exceptions?.reasons[0] || 'Exception',
-                                interrupted: true,
-                                releaseTime: release?.dateOffset || null
-                            };
-                    })()
-                    : {
-                        visibleStages: passedStages,
-                        statusText: passedStages[passedStages.length - 1].title || 'Pending...',
-                        interrupted: false,
-                        releaseTime: null,
-                    }
+                // If it has an exception and is NOT released, the journey is NOT complete.
+                return !isReleased;
+            });
 
-            // Map status for UI
+            // Check for completion
+            const isJourneyComplete = fullSchedule.length > 0 && passedStages.length === fullSchedule.length && !hasUnreleasedExceptions;
+
+            if (isJourneyComplete) {
+                console.log('===== 🎉 Journey Complete! Clearing Storage... =====');
+                localStorage.removeItem('paused_at_id');
+                localStorage.removeItem('tracking_start_time');
+                setActiveStages(fullSchedule.map(s => ({ ...s, status: 'completed' as const })));
+                setCurrentStatus('Delivered');
+                setIsInterrupted(false);
+                return;
+            }
+
+            // Update UI Statuses
             const processedStages = visibleStages.map((stage, index) => {
                 const isLast = index === visibleStages.length - 1;
                 let status: Stage["status"] = 'completed';
 
                 if (isLast) {
-                    if (interrupted && !isRemoteReleased) status = 'exception';
-                    else if (stage.exceptions && isRemoteReleased) status = 'released';
+                    if (interrupted) status = 'exception';
+                    else if (stage.exceptions && localStorage.getItem(`released_${stage.id}`) === 'true') status = 'released';
                     else status = 'current';
                 }
 
                 return { ...stage, status };
             });
 
-            // Update State (only if length changed to prevent flicker)
             setActiveStages(processedStages);
-            setCurrentStatus(statusText);
+            setCurrentStatus(currentStatusText);
             setIsInterrupted(interrupted);
 
-            // Triggers an interruption, it saves the ID of the stage that caused the interruption.
-            if (interrupted && !localStorage.getItem('paused_at_id')) localStorage.setItem('paused_at_id', visibleStages[visibleStages.length - 1].id);
-
-            // 4. Scheduling Logic
-            const futureStage = fullSchedule.find(s => new Date(s.date).getTime() > now);
-            const target = releaseTime || (futureStage ? new Date(futureStage.date) : null);
-
-            if (target) {
-                const targetTime = typeof target === 'number' ? target : target.getTime();
-                const delay = Math.max(0, targetTime - now);
-                timeoutRef.current = setTimeout(processTimeline, delay + 20);
+            // STRICT ID SYNC
+            // If we are interrupted, ensure the ID is saved so useRemoteRelease knows what to check.
+            if (!nextTargetTime) {
+                // Find next stage that hasn't happened yet
+                const futureStage = fullSchedule.find(s => DateUtils.isFuture(s.date.getTime()));
+                if (futureStage) nextTargetTime = futureStage.date.getTime();
+            }
+    
+            if (nextTargetTime && nextTargetTime > now) {
+                const delay = Math.max(0, nextTargetTime - now);
+                console.log(`Scheduling next update in ${(delay / 1000).toFixed(1)}s`);
+                timeoutRef.current = setTimeout(processTimeline, delay + 100);
             };
         };
 
-        // Run immediately on mount or when schedule changes
         processTimeline();
 
-        // Capture the current timeout id for cleanup
         const timeoutId = timeoutRef.current;
-
-        // Cleanup: Clear timeout if component unmounts or schedule changes
         return () => {
             if (timeoutId) clearTimeout(timeoutId);
         };
     }, [fullSchedule, isActive, resumeSignal, isRemoteReleased]);
 
-    // Expose a way to manually trigger re-processing when ref changes
     const resumeTracking = useCallback(() => {
-        console.log('=== Manual Resume Signal Triggered ===');
         setResumeSignal(prev => prev + 1);
-    }, [])
+    }, []);
 
     return { activeStages, currentStatus, isInterrupted, resumeTracking };
 }
